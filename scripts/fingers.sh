@@ -124,10 +124,14 @@ function copy_result() {
 }
 
 function toggle_multi_state() {
+  current_window_id=$(tmux list-panes -s -F "#{pane_id}:#{window_id}" | grep "^$current_pane_id" | cut -f2 -d:)
+
   prev_multi_state=$multi_state
   if [[ $multi_state == "0" ]]; then
+    tmux rename-window -t "$current_window_id" "[fingers:multi]"
     multi_state=1
   else
+    tmux rename-window -t "$current_window_id" "[fingers]"
     multi_state=0
   fi
 }
