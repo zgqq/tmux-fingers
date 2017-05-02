@@ -135,6 +135,8 @@ function toggle_multi_state() {
 OLDIFS=$IFS
 IFS=''
 while read -rsn1 char; do
+  is_exiting_multi=""
+
   # Escape sequence, flush input
   if [[ "$char" == $'\x1b' ]]; then
     read -rsn1 -t 0.1 next_char
@@ -155,7 +157,10 @@ while read -rsn1 char; do
     char="<ENTER>"
   fi
 
+  log "char $char"
+
   if [[ ! $(is_valid_input "$char") == "1" ]]; then
+    log "invalid input! :("
     continue
   fi
 
@@ -175,11 +180,20 @@ while read -rsn1 char; do
     toggle_compact_state
   elif [[ $char == "<ENTER>" ]]; then
     toggle_multi_state
+    is_exiting_multi=$(expr $prev_multi_state == 1 \& $multi_state == 0)
+    log "multi_state '$multi_state'"
+    log "is_exiting_multi '$is_exiting_multi'"
+
+    if [[ ! $is_exiting_multi == "1" ]]; then
+      log "beep beep next loop"
+      continue
+    fi
   elif [[ $char == "?" ]]; then
     toggle_help_state
   else
     input="$input$char"
   fi
+
 
   if [[ $help_state == "1" ]]; then
     show_help "$fingers_pane_id"
@@ -189,29 +203,32 @@ while read -rsn1 char; do
     fi
   fi
 
-  if [[ ! $char == "<ENTER>" ]]; then
-    matched_hint=$(lookup_match "$input")
+  matched_hint=$(lookup_match "$input")
 
-    tmux display-message "$input"
+  tmux display-message "$input"
 
-    if [[ -z $matched_hint ]]; then
-      continue
-    fi
+  if [[ ! $is_exiting_multi == "1" ]] && [[ -z $matched_hint ]]; then
+    log "beep beep next loop ( no matched hint )"
+    continue
   fi
 
   # not exiting multi-mode
-  if [[ ! ( $prev_multi_state == "1" && $multi_state == "0" ) ]]; then
-    if [[ $multi_state == "0" ]]; then
-      result=$matched_hint
-    else
-      result="$result $matched_hint"
-    fi
+  if [[ ! $is_exiting_multi == "1" ]] && [[ "$multi_state" == "0" ]]; then
+    result=$matched_hint
+  else
+    result="$result $matched_hint"
   fi
 
   input=""
 
-  if [[ $multi_state == "0" || ( $prev_multi_state == "1" && $multi_state == "0" ) ]]; then
-    result=$(echo $result | sed "s/^ *//g")
+  if [[ ! $is_exiting_multi == "1" ]] && [[ -z $result ]]; then
+    log "beep beep next loop ( no result )"
+    continue
+  fi
+
+  if [[ $multi_state == "0" ]] || [[ $is_exiting_multi == "1" ]]; then
+    log "copy that! '$result'"
+    #result=$(echo $result | sed "s/^ *//g")
     copy_result "$result"
     revert_to_original_pane "$current_pane_id" "$fingers_pane_id"
     exit 0
