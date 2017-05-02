@@ -198,7 +198,6 @@ while read -rsn1 char; do
     input="$input$char"
   fi
 
-
   if [[ $help_state == "1" ]]; then
     show_help "$fingers_pane_id"
   else
@@ -232,7 +231,7 @@ while read -rsn1 char; do
 
   if [[ $multi_state == "0" ]] || [[ $is_exiting_multi == "1" ]]; then
     log "copy that! '$result'"
-    #result=$(echo $result | sed "s/^ *//g")
+    result=$(echo $result | sed "s/^ *//g" | sed "s/ *$//g")
     copy_result "$result"
     revert_to_original_pane "$current_pane_id" "$fingers_pane_id"
     exit 0
