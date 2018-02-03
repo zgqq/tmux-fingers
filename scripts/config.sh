@@ -86,10 +86,12 @@ fingers_defaults=( \
   [fingers-hint-position]="left" \
   [fingers-hint-format]="#[fg=yellow,bold]%s" \
   [fingers-highlight-format]="#[fg=yellow,nobold,dim]%s" \
+  [fingers-multi-yanked-format]="%s" \
 
   [fingers-hint-position-nocompact]="right" \
   [fingers-hint-format-nocompact]="#[fg=yellow,bold][%s]" \
   [fingers-highlight-format-nocompact]="#[fg=yellow,nobold,dim]%s" \
+  [fingers-multi-yanked-format-nocompact]="%s" \
 )
 
 set_tmux_env 'fingers-patterns'
@@ -99,13 +101,15 @@ set_tmux_env 'fingers-copy-command'
 set_tmux_env 'fingers-hint-position'
 set_tmux_env 'fingers-hint-format' process_format
 set_tmux_env 'fingers-highlight-format' process_format
+set_tmux_env 'fingers-multi-yanked-format' process_format
 
 set_tmux_env 'fingers-hint-position-nocompact'
 set_tmux_env 'fingers-hint-format-nocompact' process_format
 set_tmux_env 'fingers-highlight-format-nocompact' process_format
+set_tmux_env 'fingers-multi-yanked-format-nocompact' process_format
 
-
-for option in fingers-{hint,highlight}-format{,-nocompact}; do
+# TODO read keys from fingers_defaults
+for option in fingers-{hint,highlight,multi-yanked}-format{,-nocompact}; do
   env_name="$(envify "$option")_NOCOLOR"
   option_value="$(read_from_config "$option")"
   default_value="${fingers_defaults[$option]}"

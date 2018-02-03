@@ -19,7 +19,13 @@ fingers_window_id=$2
 pane_input_temp=$4
 original_rename_setting=$5
 
+yanked_hints=()
+
 BACKSPACE=$'\177'
+
+function rerender() {
+  show_hints "$fingers_pane_id" "$compact_state" "$(array_join " " "${yanked_hints[@]}")"
+}
 
 # TODO not sure this is truly working
 function force_dim_support() {
@@ -201,14 +207,15 @@ while read -rsn1 char; do
   if [[ $help_state == "1" ]]; then
     show_help "$fingers_pane_id"
   else
-    if [[ "$prev_compact_state" != "$compact_state" ]]; then
-      show_hints "$fingers_pane_id" "$compact_state"
-    fi
+    rerender
+  fi
+
+  if [[ "$prev_compact_state" != "$compact_state" ]]; then
+    rerender
   fi
 
   matched_hint=$(lookup_match "$input")
 
-  tmux display-message "$input"
 
   if [[ ! $is_exiting_multi == "1" ]] && [[ -z $matched_hint ]]; then
     log "beep beep next loop ( no matched hint )"
@@ -219,8 +226,12 @@ while read -rsn1 char; do
   if [[ ! $is_exiting_multi == "1" ]] && [[ "$multi_state" == "0" ]]; then
     result=$matched_hint
   else
+    yanked_hints+=("$input")
     result="$result $matched_hint"
+    rerender
   fi
+
+  tmux display-message "$input"
 
   input=""
 

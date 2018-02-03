@@ -115,11 +115,15 @@ BEGIN {
     hint_format_nocolor = ENVIRON["FINGERS_HINT_FORMAT_NOCOLOR"]
     highlight_format = ENVIRON["FINGERS_HIGHLIGHT_FORMAT"]
     highlight_format_nocolor = ENVIRON["FINGERS_HIGHLIGHT_FORMAT_NOCOLOR"]
+    multi_yanked_format = ENVIRON["FINGERS_MULTI_YANKED_FORMAT"]
+    multi_yanked_format_nocolor = ENVIRON["FINGERS_MULTI_YANKED_FORMAT_NOCOLOR"]
   } else {
     hint_format = ENVIRON["FINGERS_HINT_FORMAT_NOCOMPACT"]
     highlight_format = ENVIRON["FINGERS_HIGHLIGHT_FORMAT_NOCOMPACT"]
     hint_format_nocolor = ENVIRON["FINGERS_HINT_FORMAT_NOCOMPACT_NOCOLOR"]
     highlight_format_nocolor = ENVIRON["FINGERS_HIGHLIGHT_FORMAT_NOCOMPACT_NOCOLOR"]
+    multi_yanked_format = ENVIRON["FINGERS_MULTI_YANKED_FORMAT_NOCOMPACT"]
+    multi_yanked_format_nocolor = ENVIRON["FINGERS_MULTI_YANKED_FORMAT_NOCOMPACT_NOCOLOR"]
   }
 
   if (fingers_hint_position == "left")
@@ -128,6 +132,12 @@ BEGIN {
     compound_format = highlight_format hint_format
 
   hint_lookup = ""
+
+  split(ENVIRON["FINGERS_YANKED_HINTS"], yanked_hints, " ")
+
+  for (i = 0; i < length(yanked_hints); ++i) {
+    yanked_hints_lookup[yanked_hints[i]] = 1
+  }
 }
 
 {
@@ -150,23 +160,29 @@ BEGIN {
     }
     hint_lookup = hint_lookup hint ":" line_match "\n"
 
-    if (fingers_compact_hints) {
-      hint_len = length(sprintf(hint_format_nocolor, hint))
+    if (yanked_hints_lookup[hint] == 1) {
+      hint_match = sprintf(multi_yanked_format, line_match);
+      col_pos_correction += length(sprintf(multi_yanked_format, line_match)) - 1;
+    } else {
+
+      if (fingers_compact_hints) {
+        hint_len = length(sprintf(hint_format_nocolor, hint))
+
+        if (fingers_hint_position == "left")
+          line_match = substr(line_match, hint_len + 1, length(line_match) - hint_len);
+        else
+          line_match = substr(line_match, 1, length(line_match) - hint_len);
+      }
 
       if (fingers_hint_position == "left")
-        line_match = substr(line_match, hint_len + 1, length(line_match) - hint_len);
+        hint_match = sprintf(compound_format, hint, line_match);
       else
-        line_match = substr(line_match, 1, length(line_match) - hint_len);
+        hint_match = sprintf(compound_format, line_match, hint);
+
+      col_pos_correction += length(sprintf(highlight_format, line_match)) + length(sprintf(hint_format, hint)) - 1;
     }
 
-    if (fingers_hint_position == "left")
-      hint_match = sprintf(compound_format, hint, line_match);
-    else
-      hint_match = sprintf(compound_format, line_match, hint);
-
     output_line = pre_match hint_match post_match;
-
-    col_pos_correction += length(sprintf(highlight_format, line_match)) + length(sprintf(hint_format, hint)) - 1;
 
     line = post_match;
   }
