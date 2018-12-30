@@ -144,6 +144,8 @@ function run_fingers_copy_command() {
   fi
 }
 
+tmux switch-client -T fingers
+
 while read -rsn1 char; do
   # Escape sequence, flush input
   if [[ "$char" == $'\x1b' ]]; then
